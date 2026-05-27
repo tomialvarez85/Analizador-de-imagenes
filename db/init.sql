@@ -12,15 +12,13 @@ CREATE TABLE IF NOT EXISTS usuarios (
 INSERT INTO usuarios (username, password, nombre, apellido, email)
 VALUES ('cponce', '$2b$12$6uZ/ZXGHGnrjUiEFg0d35./CCYRRKWmOd3p31mdtFfwXzTIpPualG', 'Carlos', 'Ponce', 'cponce@example.com');
 
-CREATE TABLE cards (
+CREATE TABLE IF NOT EXISTS analisis_imagenes (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(255),
-    column_id INT,
-    position INT DEFAULT 0
+    usuario_id INT NOT NULL,
+    nombre_archivo VARCHAR(255),
+    descripcion TEXT,
+    pregunta TEXT,
+    historia TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
 );
-
-CREATE TABLE columns (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL
-);
-INSERT INTO columns (name) VALUES ('TODO'), ('DOING'), ('DONE');

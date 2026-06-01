@@ -46,6 +46,26 @@ cd vps-poo-2026
 - API (Basic Auth): usuario `poo`, clave `clavepoo`
 - MySQL: base `vps-poo`, usuario `poo_user`, clave `poo_pass`
 
+## Analisis de imagenes (Anthropic)
+
+El endpoint `POST /analizar-imagen` usa la API de Anthropic (Claude con vision).
+
+En el archivo `.env` del servidor configurá:
+
+```env
+ANTHROPIC_API_KEY=sk-ant-api03-...
+ANTHROPIC_MODEL=claude-sonnet-4-20250514
+```
+
+Luego reconstruí el backend:
+
+```bash
+docker compose build backend
+docker compose up -d backend
+```
+
+La clave se obtiene en [console.anthropic.com](https://console.anthropic.com/).
+
 ## Notas cortas
 - El certificado es autofirmado por defecto.
 - La base se inicializa con el SQL en [db/init.sql](db/init.sql).

@@ -8,6 +8,8 @@ from jose import JWTError, jwt
 import bcrypt
 import mysql.connector
 
+from app.anthropic_analyzer import AnthropicAnalyzerError, analizar_imagen_con_anthropic
+
 app = FastAPI(title="VPS-POO API", root_path="/api")
 
 JWT_SECRET = os.getenv("JWT_SECRET", "dev_secret_change_me")
@@ -185,10 +187,17 @@ def analizar_imagen(payload: ImagenRequest, request: Request):
     usuario = get_current_user(request)
     usuario_id = usuario.get("user_id")
 
-    # TODO: reemplazar con llamada real a OpenAI cuando tengamos la API key
-    descripcion = "Veo un dibujo muy colorido con figuras interesantes."
-    pregunta = "¿Podés contarme qué quisiste dibujar en esta imagen?"
-    historia = "Había una vez un dibujo mágico que cobró vida y empezó a explorar el mundo..."
+    try:
+        resultado = analizar_imagen_con_anthropic(
+            payload.imagen_base64,
+            payload.nombre_archivo,
+        )
+    except AnthropicAnalyzerError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
+
+    descripcion = resultado["descripcion"]
+    pregunta = resultado["pregunta"]
+    historia = resultado["historia"]
 
     conn = get_db()
     cursor = conn.cursor()

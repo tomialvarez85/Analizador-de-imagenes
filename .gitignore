@@ -1,0 +1,28 @@
+# Node.js
+node_modules/
+
+# Variables de entorno (claves y secretos)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Qt / C++
+frontend-qt/build/
+frontend-qt/debug/
+frontend-qt/release/
+*.user
+*.autosave
+
+# Frontend (Vite)
+frontend/dist/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

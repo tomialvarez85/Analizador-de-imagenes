@@ -6,8 +6,13 @@ from pathlib import Path
 
 from anthropic import Anthropic, APIError
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
+def _leer_api_key() -> str:
+    raw = os.getenv("ANTHROPIC_API_KEY", "")
+    return raw.strip().strip('"').strip("'")
+
+
+ANTHROPIC_API_KEY = _leer_api_key()
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6").strip()
 ANTHROPIC_MAX_TOKENS = int(os.getenv("ANTHROPIC_MAX_TOKENS", "1024"))
 
 PROMPT_SISTEMA = """Sos un tutor visual parlante para un centro educativo infantil.
@@ -126,6 +131,19 @@ def analizar_imagen_con_anthropic(imagen_base64: str, nombre_archivo: str | None
             ],
         )
     except APIError as exc:
+        detalle = str(exc)
+        if "401" in detalle or "authentication" in detalle.lower():
+            raise AnthropicAnalyzerError(
+                "Clave de Anthropic invalida o no configurada en el VPS. "
+                "Revisá ANTHROPIC_API_KEY en el archivo .env del servidor y reiniciá el backend.",
+                status_code=503,
+            ) from exc
+        if "404" in detalle or "not_found" in detalle.lower():
+            raise AnthropicAnalyzerError(
+                f"Modelo Anthropic no encontrado: {ANTHROPIC_MODEL}. "
+                "Usá por ejemplo claude-sonnet-4-6 en ANTHROPIC_MODEL del .env.",
+                status_code=503,
+            ) from exc
         raise AnthropicAnalyzerError(f"Error de Anthropic: {exc}") from exc
     except Exception as exc:
         raise AnthropicAnalyzerError(f"Error al llamar a Anthropic: {exc}") from exc

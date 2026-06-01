@@ -54,7 +54,7 @@ En el archivo `.env` del servidor configurá:
 
 ```env
 ANTHROPIC_API_KEY=sk-ant-api03-...
-ANTHROPIC_MODEL=claude-sonnet-4-20250514
+ANTHROPIC_MODEL=claude-sonnet-4-6
 ```
 
 Luego reconstruí el backend:

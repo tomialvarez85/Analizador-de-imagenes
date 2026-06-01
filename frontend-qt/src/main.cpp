@@ -1,15 +1,19 @@
-#include "loginwindow.h"
-#include "mainwindow.h"
-#include "registrowindow.h"
+#include "windows/loginwindow.h"
+#include "windows/mainwindow.h"
+#include "windows/registrowindow.h"
 #include "styles.h"
 
 #include <QApplication>
+#include <QFont>
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("AnalizadorImagenes"));
     app.setApplicationDisplayName(QStringLiteral("Analizador de Imágenes"));
+
+    QFont appFont(QStringLiteral("Comic Sans MS"), 12);
+    app.setFont(appFont);
     app.setStyleSheet(AppStyles::applicationStyleSheet());
 
     auto *loginWindow = new LoginWindow;

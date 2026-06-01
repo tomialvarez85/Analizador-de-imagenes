@@ -2,12 +2,15 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QPixmap>
 #include <QProcess>
 
 class QLabel;
 class QTextEdit;
 class QPushButton;
 class QTemporaryFile;
+class QBoxLayout;
+class QFrame;
 
 class MainWindow : public QMainWindow
 {
@@ -16,6 +19,9 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
+
+protected:
+    void resizeEvent(QResizeEvent *event) override;
 
 private slots:
     void onCargarImagenClicked();
@@ -36,15 +42,21 @@ private:
     void narrarHistoria(const QString &texto);
     void detenerNarracion();
     void actualizarBotonReproducir();
+    void refrescarVistaImagen();
+    void ajustarLayoutResponsivo();
 
     QLabel *m_imageLabel = nullptr;
     QTextEdit *m_resultEdit = nullptr;
     QPushButton *m_cargarButton = nullptr;
     QPushButton *m_analizarButton = nullptr;
     QPushButton *m_reproducirButton = nullptr;
+    QBoxLayout *m_contentLayout = nullptr;
+    QFrame *m_leftCard = nullptr;
+    QFrame *m_rightCard = nullptr;
 
     QString m_imagePath;
     QByteArray m_imageBytes;
+    QPixmap m_pixmapOriginal;
     QString m_historiaText;
 
     QProcess *m_vozProcess = nullptr;

@@ -6,7 +6,7 @@
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include "../../../registrowindow.h"
+#include "../../../include/windows/registrowindow.h"
 #include <QtCore/qmetatype.h>
 
 #include <QtCore/qtmochelpers.h>

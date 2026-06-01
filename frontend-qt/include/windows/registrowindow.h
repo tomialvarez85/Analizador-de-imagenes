@@ -29,9 +29,6 @@ private:
 
     QLineEdit *m_usernameEdit = nullptr;
     QLineEdit *m_passwordEdit = nullptr;
-    QLineEdit *m_nombreEdit = nullptr;
-    QLineEdit *m_apellidoEdit = nullptr;
-    QLineEdit *m_emailEdit = nullptr;
     QPushButton *m_registrarButton = nullptr;
     QPushButton *m_volverButton = nullptr;
     QLabel *m_statusLabel = nullptr;

@@ -6,23 +6,24 @@ CONFIG   -= app_bundle
 TARGET   = AnalizadorImagenes
 TEMPLATE = app
 
+INCLUDEPATH += $$PWD/include
+
 SOURCES += \
-    main.cpp \
-    apiclient.cpp \
-    loginwindow.cpp \
-    registrowindow.cpp \
-    mainwindow.cpp
+    src/main.cpp \
+    src/uihelpers.cpp \
+    src/api/apiclient.cpp \
+    src/windows/loginwindow.cpp \
+    src/windows/registrowindow.cpp \
+    src/windows/mainwindow.cpp
 
 HEADERS += \
-    config.h \
-    styles.h \
-    apiclient.h \
-    loginwindow.h \
-    registrowindow.h \
-    mainwindow.h
-
-# Qt 6: descomentar si qmake no detecta multimedia automáticamente
-# greaterThan(QT_MAJOR_VERSION, 5): QT += multimedia
+    include/config.h \
+    include/styles.h \
+    include/uihelpers.h \
+    include/api/apiclient.h \
+    include/windows/loginwindow.h \
+    include/windows/registrowindow.h \
+    include/windows/mainwindow.h
 
 win32 {
     RC_ICONS =

@@ -1,4 +1,4 @@
-#include "apiclient.h"
+#include "api/apiclient.h"
 #include "config.h"
 
 #include <QJsonArray>
@@ -123,17 +123,11 @@ void ApiClient::login(const QString &username, const QString &password)
 }
 
 void ApiClient::registro(const QString &username,
-                         const QString &password,
-                         const QString &nombre,
-                         const QString &apellido,
-                         const QString &email)
+                         const QString &password)
 {
     QJsonObject payload;
     payload.insert(QStringLiteral("username"), username);
     payload.insert(QStringLiteral("password"), password);
-    payload.insert(QStringLiteral("nombre"), nombre);
-    payload.insert(QStringLiteral("apellido"), apellido);
-    payload.insert(QStringLiteral("email"), email);
 
     QNetworkRequest request = buildJsonRequest(QStringLiteral("/auth/registro"), false);
     QNetworkReply *reply = m_nam.post(request, QJsonDocument(payload).toJson());

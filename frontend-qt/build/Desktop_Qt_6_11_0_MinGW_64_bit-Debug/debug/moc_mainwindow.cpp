@@ -6,7 +6,7 @@
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include "../../../mainwindow.h"
+#include "../../../include/windows/mainwindow.h"
 #include <QtCore/qmetatype.h>
 
 #include <QtCore/qtmochelpers.h>

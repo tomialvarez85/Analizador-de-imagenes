@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QNetworkAccessManager>
+#include <QNetworkReply>
 #include <QString>
 
 class ApiClient : public QObject
@@ -18,10 +19,7 @@ public:
 
     void login(const QString &username, const QString &password);
     void registro(const QString &username,
-                  const QString &password,
-                  const QString &nombre,
-                  const QString &apellido,
-                  const QString &email);
+                  const QString &password);
     void analizarImagen(const QString &imagenBase64, const QString &nombreArchivo);
 
 signals:

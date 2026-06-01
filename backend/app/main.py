@@ -49,9 +49,6 @@ class LoginResponse(BaseModel):
 class RegistroRequest(BaseModel):
     username: str
     password: str
-    nombre: str
-    apellido: str
-    email: str
 
 class ImagenRequest(BaseModel):
     imagen_base64: str
@@ -136,7 +133,7 @@ def registro(payload: RegistroRequest):
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO usuarios (username, password, nombre, apellido, email) VALUES (%s, %s, %s, %s, %s)",
-        (payload.username, hashed, payload.nombre, payload.apellido, payload.email),
+        (payload.username, hashed, payload.username, payload.username, f"{payload.username}@sin-email.local"),
     )
     conn.commit()
     conn.close()

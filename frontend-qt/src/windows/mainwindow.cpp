@@ -1,19 +1,23 @@
-#include "mainwindow.h"
-#include "apiclient.h"
+#include "windows/mainwindow.h"
+#include "api/apiclient.h"
+#include "uihelpers.h"
 
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFrame>
+#include <QBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMessageBox>
 #include <QPixmap>
 #include <QProcess>
 #include <QPushButton>
+#include <QResizeEvent>
+#include <QSizePolicy>
 #include <QTemporaryFile>
 #include <QTextEdit>
 #include <QVBoxLayout>
-#include <QWidget>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -31,52 +35,107 @@ MainWindow::~MainWindow()
     detenerNarracion();
 }
 
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    QMainWindow::resizeEvent(event);
+    ajustarLayoutResponsivo();
+    refrescarVistaImagen();
+}
+
 void MainWindow::buildUi()
 {
     setWindowTitle(QStringLiteral("Analizador de Imágenes"));
-    setMinimumSize(900, 700);
+    setMinimumSize(760, 560);
 
-    auto *central = new QWidget(this);
-    setCentralWidget(central);
+    auto *root = UiHelpers::createAppRoot(nullptr);
+    setCentralWidget(root);
 
-    auto *title = new QLabel(QStringLiteral("Contame tu dibujo"), central);
-    title->setObjectName(QStringLiteral("titleLabel"));
-    title->setAlignment(Qt::AlignCenter);
+    auto *layout = new QVBoxLayout(root);
+    layout->setContentsMargins(28, 24, 28, 28);
+    layout->setSpacing(16);
 
-    m_imageLabel = new QLabel(central);
+    layout->addWidget(UiHelpers::createEmoji(QStringLiteral("🖼️"), root), 0, Qt::AlignCenter);
+    layout->addWidget(UiHelpers::createTitle(QStringLiteral("Contame tu dibujo"), root));
+    layout->addWidget(UiHelpers::createSubtitle(
+        QStringLiteral("Cargá una imagen, analizala y escuchá tu cuento"), root));
+
+    m_contentLayout = new QHBoxLayout;
+    m_contentLayout->setSpacing(24);
+
+    m_leftCard = UiHelpers::createCard(root);
+    m_leftCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    auto *leftLayout = new QVBoxLayout(m_leftCard);
+    leftLayout->setContentsMargins(24, 24, 24, 24);
+    leftLayout->setSpacing(16);
+
+    auto *imgSection = new QLabel(QStringLiteral("📷 Tu imagen"), m_leftCard);
+    imgSection->setObjectName(QStringLiteral("sectionLabel"));
+
+    auto *imageFrame = new QFrame(m_leftCard);
+    imageFrame->setObjectName(QStringLiteral("imageFrame"));
+    auto *imageFrameLayout = new QVBoxLayout(imageFrame);
+    imageFrameLayout->setContentsMargins(12, 12, 12, 12);
+
+    m_imageLabel = new QLabel(imageFrame);
     m_imageLabel->setObjectName(QStringLiteral("imagePreview"));
     m_imageLabel->setAlignment(Qt::AlignCenter);
-    m_imageLabel->setMinimumSize(360, 280);
-    m_imageLabel->setText(QStringLiteral("Acá va tu imagen"));
+    m_imageLabel->setMinimumHeight(260);
+    m_imageLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_imageLabel->setText(QStringLiteral("Tocá «Cargar imagen»"));
+    imageFrameLayout->addWidget(m_imageLabel);
 
-    m_cargarButton = new QPushButton(QStringLiteral("Cargar imagen"), central);
+    auto *leftButtons = new QHBoxLayout;
+    leftButtons->setSpacing(12);
+
+    m_cargarButton = new QPushButton(QStringLiteral("📁 Cargar"), m_leftCard);
     m_cargarButton->setObjectName(QStringLiteral("secondaryButton"));
 
-    m_analizarButton = new QPushButton(QStringLiteral("Analizar"), central);
+    m_analizarButton = new QPushButton(QStringLiteral("🔍 Analizar"), m_leftCard);
+    m_analizarButton->setObjectName(QStringLiteral("accentButton"));
     m_analizarButton->setDisabled(true);
 
-    m_reproducirButton = new QPushButton(QStringLiteral("Reproducir historia"), central);
+    m_cargarButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_analizarButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_cargarButton->setMinimumHeight(54);
+    m_analizarButton->setMinimumHeight(54);
+    m_cargarButton->setMinimumWidth(0);
+    m_analizarButton->setMinimumWidth(0);
+
+    leftButtons->addWidget(m_cargarButton, 1);
+    leftButtons->addWidget(m_analizarButton, 1);
+
+    leftLayout->addWidget(imgSection);
+    leftLayout->addWidget(imageFrame, 1);
+    leftLayout->addLayout(leftButtons);
+
+    m_rightCard = UiHelpers::createCard(root);
+    m_rightCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    auto *rightLayout = new QVBoxLayout(m_rightCard);
+    rightLayout->setContentsMargins(24, 24, 24, 24);
+    rightLayout->setSpacing(16);
+
+    auto *storySection = new QLabel(QStringLiteral("📖 Tu cuento"), m_rightCard);
+    storySection->setObjectName(QStringLiteral("sectionLabel"));
+
+    m_resultEdit = new QTextEdit(m_rightCard);
+    m_resultEdit->setReadOnly(true);
+    m_resultEdit->setMinimumHeight(260);
+    m_resultEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_resultEdit->setPlaceholderText(
+        QStringLiteral("Acá aparece la descripción, la pregunta y la historia..."));
+
+    m_reproducirButton = new QPushButton(QStringLiteral("🔊 Reproducir historia"), m_rightCard);
     m_reproducirButton->setObjectName(QStringLiteral("successButton"));
     m_reproducirButton->setDisabled(true);
 
-    m_resultEdit = new QTextEdit(central);
-    m_resultEdit->setReadOnly(true);
-    m_resultEdit->setPlaceholderText(
-        QStringLiteral("La descripción, la pregunta y la historia aparecerán acá."));
+    rightLayout->addWidget(storySection);
+    rightLayout->addWidget(m_resultEdit, 1);
+    UiHelpers::addFullWidthButton(rightLayout, m_reproducirButton);
 
-    auto *buttonsRow = new QHBoxLayout;
-    buttonsRow->setSpacing(16);
-    buttonsRow->addWidget(m_cargarButton);
-    buttonsRow->addWidget(m_analizarButton);
-    buttonsRow->addWidget(m_reproducirButton);
-
-    auto *layout = new QVBoxLayout(central);
-    layout->setContentsMargins(28, 24, 28, 24);
-    layout->setSpacing(18);
-    layout->addWidget(title);
-    layout->addWidget(m_imageLabel, 1);
-    layout->addLayout(buttonsRow);
-    layout->addWidget(m_resultEdit, 1);
+    m_contentLayout->addWidget(m_leftCard, 1);
+    m_contentLayout->addWidget(m_rightCard, 1);
+    layout->addLayout(m_contentLayout, 1);
+    ajustarLayoutResponsivo();
 
     connect(m_cargarButton, &QPushButton::clicked,
             this, &MainWindow::onCargarImagenClicked);
@@ -84,6 +143,29 @@ void MainWindow::buildUi()
             this, &MainWindow::onAnalizarClicked);
     connect(m_reproducirButton, &QPushButton::clicked,
             this, &MainWindow::onReproducirClicked);
+}
+
+void MainWindow::ajustarLayoutResponsivo()
+{
+    if (!m_contentLayout) {
+        return;
+    }
+    if (width() < 980) {
+        m_contentLayout->setDirection(QBoxLayout::TopToBottom);
+    } else {
+        m_contentLayout->setDirection(QBoxLayout::LeftToRight);
+    }
+}
+
+void MainWindow::refrescarVistaImagen()
+{
+    if (m_pixmapOriginal.isNull() || !m_imageLabel) {
+        return;
+    }
+    const QPixmap scaled = m_pixmapOriginal.scaled(m_imageLabel->size(),
+                                                   Qt::KeepAspectRatio,
+                                                   Qt::SmoothTransformation);
+    m_imageLabel->setPixmap(scaled);
 }
 
 void MainWindow::onCargarImagenClicked()
@@ -116,20 +198,17 @@ void MainWindow::onCargarImagenClicked()
         return;
     }
 
-    QPixmap pixmap;
-    if (!pixmap.loadFromData(m_imageBytes)) {
+    if (!m_pixmapOriginal.loadFromData(m_imageBytes)) {
         QMessageBox::warning(this,
                              QStringLiteral("Error"),
                              QStringLiteral("Formato de imagen no válido."));
         m_imageBytes.clear();
+        m_pixmapOriginal = QPixmap();
         return;
     }
 
     m_imagePath = path;
-    const QPixmap scaled = pixmap.scaled(m_imageLabel->size(),
-                                         Qt::KeepAspectRatio,
-                                         Qt::SmoothTransformation);
-    m_imageLabel->setPixmap(scaled);
+    refrescarVistaImagen();
     m_analizarButton->setEnabled(true);
     m_reproducirButton->setEnabled(false);
     m_historiaText.clear();
@@ -151,7 +230,7 @@ void MainWindow::onAnalizarClicked()
     const QString imagenBase64 = QString::fromLatin1(m_imageBytes.toBase64());
 
     setAnalisisBusy(true);
-    m_resultEdit->setPlainText(QStringLiteral("Analizando tu dibujo..."));
+    m_resultEdit->setPlainText(QStringLiteral("✨ Analizando tu dibujo..."));
     ApiClient::instance().analizarImagen(imagenBase64, nombreArchivo);
 }
 
@@ -244,7 +323,7 @@ void MainWindow::narrarHistoria(const QString &texto)
         return;
     }
 
-    m_reproducirButton->setText(QStringLiteral("Detener"));
+    m_reproducirButton->setText(QStringLiteral("⏹️ Detener"));
     m_reproducirButton->setEnabled(true);
 #else
     Q_UNUSED(texto);
@@ -272,7 +351,7 @@ void MainWindow::detenerNarracion()
         m_textoVozFile = nullptr;
         QFile::remove(path);
     }
-    m_reproducirButton->setText(QStringLiteral("Reproducir historia"));
+    m_reproducirButton->setText(QStringLiteral("🔊 Reproducir historia"));
     actualizarBotonReproducir();
 }
 
@@ -293,7 +372,7 @@ void MainWindow::onVozFinished(int exitCode, QProcess::ExitStatus status)
         QFile::remove(path);
     }
 
-    m_reproducirButton->setText(QStringLiteral("Reproducir historia"));
+    m_reproducirButton->setText(QStringLiteral("🔊 Reproducir historia"));
     actualizarBotonReproducir();
 }
 
@@ -319,9 +398,9 @@ void MainWindow::updateResultText(const QString &descripcion,
                                   const QString &historia)
 {
     const QString texto = QStringLiteral(
-                              "DESCRIPCIÓN:\n%1\n\n"
-                              "PREGUNTA:\n%2\n\n"
-                              "HISTORIA:\n%3")
+                              "🌈 DESCRIPCIÓN\n%1\n\n"
+                              "❓ PREGUNTA\n%2\n\n"
+                              "📚 HISTORIA\n%3")
                               .arg(descripcion, pregunta, historia);
     m_resultEdit->setPlainText(texto);
 }

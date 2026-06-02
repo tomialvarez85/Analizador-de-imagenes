@@ -125,7 +125,7 @@ void MainWindow::buildUi()
 
     m_resultEdit = new QTextEdit(m_rightCard);
     m_resultEdit->setReadOnly(true);
-    m_resultEdit->setMinimumHeight(340);
+    m_resultEdit->setMinimumHeight(240);
     m_resultEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_resultEdit->setPlaceholderText(
         QStringLiteral("Acá aparece la descripción, la pregunta y la historia..."));

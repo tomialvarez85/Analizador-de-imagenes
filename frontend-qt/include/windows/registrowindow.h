@@ -6,6 +6,8 @@
 class QLineEdit;
 class QPushButton;
 class QLabel;
+class QBoxLayout;
+class QResizeEvent;
 
 class RegistroWindow : public QWidget
 {
@@ -17,6 +19,9 @@ public:
 signals:
     void backToLoginRequested();
 
+protected:
+    void resizeEvent(QResizeEvent *event) override;
+
 private slots:
     void onRegistrarseClicked();
     void onVolverClicked();
@@ -26,12 +31,15 @@ private slots:
 private:
     void buildUi();
     void setBusy(bool busy);
+    void ajustarLayoutResponsivo();
 
     QLineEdit *m_usernameEdit = nullptr;
     QLineEdit *m_passwordEdit = nullptr;
     QPushButton *m_registrarButton = nullptr;
     QPushButton *m_volverButton = nullptr;
     QLabel *m_statusLabel = nullptr;
+    QBoxLayout *m_cardLayout = nullptr;
+    QWidget *m_heroPanel = nullptr;
 };
 
 #endif // REGISTROWINDOW_H

@@ -2,11 +2,13 @@
 #include "api/apiclient.h"
 #include "uihelpers.h"
 
+#include <QBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QResizeEvent>
 #include <QVBoxLayout>
 
 RegistroWindow::RegistroWindow(QWidget *parent)
@@ -23,7 +25,7 @@ RegistroWindow::RegistroWindow(QWidget *parent)
 void RegistroWindow::buildUi()
 {
     setWindowTitle(QStringLiteral("Analizador de Imágenes - Registro"));
-    setMinimumSize(820, 540);
+    setMinimumSize(680, 520);
 
     auto *windowLayout = new QVBoxLayout(this);
     windowLayout->setContentsMargins(0, 0, 0, 0);
@@ -39,25 +41,26 @@ void RegistroWindow::buildUi()
 
     auto *card = UiHelpers::createCard(root, UiHelpers::kAuthCardWidth);
     card->setMaximumWidth(UiHelpers::kAuthCardWidth);
-    card->setMinimumWidth(760);
-    auto *cardLayout = new QHBoxLayout(card);
-    cardLayout->setContentsMargins(0, 0, 0, 0);
-    cardLayout->setSpacing(0);
+    card->setMinimumWidth(560);
+    m_cardLayout = new QBoxLayout(QBoxLayout::LeftToRight, card);
+    m_cardLayout->setContentsMargins(0, 0, 0, 0);
+    m_cardLayout->setSpacing(0);
 
-    QWidget *heroPanel = new QWidget(card);
-    heroPanel->setObjectName(QStringLiteral("heroPanel"));
-    auto *heroLayout = new QVBoxLayout(heroPanel);
+    m_heroPanel = new QWidget(card);
+    m_heroPanel->setObjectName(QStringLiteral("heroPanel"));
+    auto *heroLayout = new QVBoxLayout(m_heroPanel);
     heroLayout->setContentsMargins(44, 40, 44, 40);
     heroLayout->setSpacing(20);
-    heroLayout->addWidget(UiHelpers::createEmoji(QStringLiteral("🌟"), heroPanel));
-    heroLayout->addWidget(UiHelpers::createTitle(QStringLiteral("¡Creá tu cuenta!"), heroPanel));
+    heroLayout->addWidget(UiHelpers::createEmoji(QStringLiteral("🌟"), m_heroPanel));
+    heroLayout->addWidget(UiHelpers::createTitle(QStringLiteral("¡Creá tu cuenta!"), m_heroPanel));
     heroLayout->addWidget(
-        UiHelpers::createSubtitle(QStringLiteral("Solo necesitás usuario y clave"), heroPanel));
+        UiHelpers::createSubtitle(QStringLiteral("Solo necesitás usuario y clave"), m_heroPanel));
     heroLayout->addSpacing(12);
-    heroLayout->addWidget(UiHelpers::createSubtitle(QStringLiteral("Registro rápido en un solo paso."), heroPanel));
+    heroLayout->addWidget(UiHelpers::createSubtitle(QStringLiteral("Registro rápido en un solo paso."), m_heroPanel));
     heroLayout->addStretch(1);
 
     QWidget *formPanel = new QWidget(card);
+    formPanel->setObjectName(QStringLiteral("formPanel"));
     auto *formLayout = new QVBoxLayout(formPanel);
     formLayout->setContentsMargins(44, 40, 44, 40);
     formLayout->setSpacing(18);
@@ -97,9 +100,9 @@ void RegistroWindow::buildUi()
     formLayout->addWidget(m_statusLabel);
     formLayout->addStretch(1);
 
-    heroPanel->setFixedWidth(360);
-    cardLayout->addWidget(heroPanel);
-    cardLayout->addWidget(formPanel);
+    m_heroPanel->setFixedWidth(360);
+    m_cardLayout->addWidget(m_heroPanel);
+    m_cardLayout->addWidget(formPanel);
 
     centerRow->addWidget(card, 0, Qt::AlignCenter);
     centerRow->addStretch(1);
@@ -108,6 +111,30 @@ void RegistroWindow::buildUi()
 
     connect(m_registrarButton, &QPushButton::clicked, this, &RegistroWindow::onRegistrarseClicked);
     connect(m_volverButton, &QPushButton::clicked, this, &RegistroWindow::onVolverClicked);
+
+    ajustarLayoutResponsivo();
+}
+
+void RegistroWindow::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    ajustarLayoutResponsivo();
+}
+
+void RegistroWindow::ajustarLayoutResponsivo()
+{
+    if (!m_cardLayout || !m_heroPanel) {
+        return;
+    }
+
+    if (width() < 820) {
+        m_cardLayout->setDirection(QBoxLayout::TopToBottom);
+        m_heroPanel->setMinimumWidth(0);
+        m_heroPanel->setMaximumWidth(QWIDGETSIZE_MAX);
+    } else {
+        m_cardLayout->setDirection(QBoxLayout::LeftToRight);
+        m_heroPanel->setFixedWidth(360);
+    }
 }
 
 void RegistroWindow::setBusy(bool busy)

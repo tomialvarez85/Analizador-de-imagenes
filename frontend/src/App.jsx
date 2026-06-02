@@ -49,6 +49,10 @@ export default function App() {
     setPassword("");
   };
 
+  const handleCreateAccount = () => {
+    alert("Funcionalidad de crear cuenta no implementada.");
+  };
+
   if (token && user) {
     return (
       <main className="page">
@@ -56,11 +60,11 @@ export default function App() {
           <header className="topbar">
             <span className="brand">VPS-POO</span>
             <button className="logout" onClick={handleLogout}>
-              Cerrar sesion
+              Cerrar sesión
             </button>
           </header>
           <section className="hero card">
-            <h1>Bienvenido, {user.nombre || "Carlos"}</h1>
+            <h1>Bienvenido, {user.nombre || "Usuario"}</h1>
             <p>Acceso correcto. Esta es la portada del sistema.</p>
           </section>
         </div>
@@ -70,31 +74,62 @@ export default function App() {
 
   return (
     <main className="page">
-      <form className="card" onSubmit={handleSubmit}>
-        <h1>Ingreso</h1>
-        <label>
-          Usuario
-          <input
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            autoComplete="username"
-            required
-          />
-        </label>
-        <label>
-          Clave
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            autoComplete="current-password"
-            required
-          />
-        </label>
-        {error ? <p className="error">{error}</p> : null}
-        <button className="primary" type="submit" disabled={loading}>
-          {loading ? "Ingresando..." : "Entrar"}
-        </button>
+      <div className="small-screen-notice">
+        <div className="notice-card">
+          <h2>Interfaz optimizada para escritorio</h2>
+          <p>Esta experiencia está diseñada para pantallas grandes. Usa un monitor o amplia la ventana para continuar.</p>
+        </div>
+      </div>
+
+      <form className="card login-card" onSubmit={handleSubmit}>
+        <div className="hero-panel">
+          <div className="hero-icon">🎨</div>
+          <h1>¡Hola, artista!</h1>
+          <p>Bienvenido a la versión horizontal del login. Aquí se combinan el acceso y el registro en una interfaz de escritorio clara y simétrica.</p>
+          <div className="hero-info">
+            <p>Login y registro alineados en una sola vista.</p>
+            <p>Completa tus datos a la derecha y accede rápido.</p>
+          </div>
+        </div>
+
+        <div className="form-panel">
+          <div className="form-header">
+            <h2>Ingresar</h2>
+            <p>Inicia sesión con tu usuario y contraseña.</p>
+          </div>
+
+          <label className="field-label">
+            <span>Usuario</span>
+            <input
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              autoComplete="username"
+              required
+            />
+          </label>
+
+          <label className="field-label">
+            <span>Clave</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="current-password"
+              required
+            />
+          </label>
+
+          {error ? <p className="error">{error}</p> : null}
+
+          <button className="primary" type="submit" disabled={loading}>
+            {loading ? "Ingresando..." : "¡Entrar!"}
+          </button>
+
+          <p className="form-help">¿No tenés cuenta? Creala para comenzar a analizar imágenes.</p>
+          <button className="secondary" type="button" onClick={handleCreateAccount}>
+            ✨ Crear cuenta
+          </button>
+        </div>
       </form>
     </main>
   );

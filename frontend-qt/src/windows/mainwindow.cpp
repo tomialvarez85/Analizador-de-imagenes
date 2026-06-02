@@ -51,18 +51,22 @@ void MainWindow::buildUi()
     setCentralWidget(root);
 
     auto *layout = new QVBoxLayout(root);
-    layout->setContentsMargins(28, 24, 28, 28);
-    layout->setSpacing(16);
+    layout->setContentsMargins(32, 28, 32, 32);
+    layout->setSpacing(18);
+    layout->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
 
     layout->addWidget(UiHelpers::createEmoji(QStringLiteral("🖼️"), root), 0, Qt::AlignCenter);
-    layout->addWidget(UiHelpers::createTitle(QStringLiteral("Contame tu dibujo"), root));
+    layout->addWidget(UiHelpers::createTitle(QStringLiteral("Contame tu dibujo"), root), 0, Qt::AlignCenter);
     layout->addWidget(UiHelpers::createSubtitle(
-        QStringLiteral("Cargá una imagen, analizala y escuchá tu cuento"), root));
+        QStringLiteral("Cargá una imagen, analizala y escuchá tu cuento"), root), 0, Qt::AlignCenter);
 
     m_contentLayout = new QHBoxLayout;
-    m_contentLayout->setSpacing(24);
+    m_contentLayout->setSpacing(28);
+    m_contentLayout->setContentsMargins(0, 0, 0, 0);
 
     m_leftCard = UiHelpers::createCard(root);
+    m_leftCard->setMinimumWidth(380);
+    m_leftCard->setMinimumHeight(360);
     m_leftCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     auto *leftLayout = new QVBoxLayout(m_leftCard);
     leftLayout->setContentsMargins(24, 24, 24, 24);
@@ -79,7 +83,7 @@ void MainWindow::buildUi()
     m_imageLabel = new QLabel(imageFrame);
     m_imageLabel->setObjectName(QStringLiteral("imagePreview"));
     m_imageLabel->setAlignment(Qt::AlignCenter);
-    m_imageLabel->setMinimumHeight(260);
+    m_imageLabel->setMinimumHeight(340);
     m_imageLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_imageLabel->setText(QStringLiteral("Tocá «Cargar imagen»"));
     imageFrameLayout->addWidget(m_imageLabel);
@@ -109,6 +113,8 @@ void MainWindow::buildUi()
     leftLayout->addLayout(leftButtons);
 
     m_rightCard = UiHelpers::createCard(root);
+    m_rightCard->setMinimumWidth(380);
+    m_rightCard->setMinimumHeight(360);
     m_rightCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     auto *rightLayout = new QVBoxLayout(m_rightCard);
     rightLayout->setContentsMargins(24, 24, 24, 24);
@@ -119,7 +125,7 @@ void MainWindow::buildUi()
 
     m_resultEdit = new QTextEdit(m_rightCard);
     m_resultEdit->setReadOnly(true);
-    m_resultEdit->setMinimumHeight(260);
+    m_resultEdit->setMinimumHeight(340);
     m_resultEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_resultEdit->setPlaceholderText(
         QStringLiteral("Acá aparece la descripción, la pregunta y la historia..."));
@@ -135,6 +141,7 @@ void MainWindow::buildUi()
     m_contentLayout->addWidget(m_leftCard, 1);
     m_contentLayout->addWidget(m_rightCard, 1);
     layout->addLayout(m_contentLayout, 1);
+    layout->setStretchFactor(m_contentLayout, 1);
     ajustarLayoutResponsivo();
 
     connect(m_cargarButton, &QPushButton::clicked,
@@ -150,7 +157,7 @@ void MainWindow::ajustarLayoutResponsivo()
     if (!m_contentLayout) {
         return;
     }
-    if (width() < 980) {
+    if (width() < 820) {
         m_contentLayout->setDirection(QBoxLayout::TopToBottom);
     } else {
         m_contentLayout->setDirection(QBoxLayout::LeftToRight);

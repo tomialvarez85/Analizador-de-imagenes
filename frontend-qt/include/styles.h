@@ -45,6 +45,13 @@ inline QString applicationStyleSheet()
             color: #6C5CE7;
             background: transparent;
         }
+        QWidget#heroPanel {
+            background: qlineargradient(
+                x1:0, y1:0, x2:1, y2:1,
+                stop:0 #FFF9E6,
+                stop:1 #FFF1F8
+            );
+        }
         QLabel#formLabel {
             font-size: 15pt;
             font-weight: bold;

@@ -3,6 +3,7 @@
 #include "uihelpers.h"
 
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
@@ -22,7 +23,7 @@ LoginWindow::LoginWindow(QWidget *parent)
 void LoginWindow::buildUi()
 {
     setWindowTitle(QStringLiteral("Analizador de Imágenes - Ingresar"));
-    setMinimumSize(420, 540);
+    setMinimumSize(820, 540);
 
     auto *windowLayout = new QVBoxLayout(this);
     windowLayout->setContentsMargins(0, 0, 0, 0);
@@ -38,38 +39,65 @@ void LoginWindow::buildUi()
 
     auto *card = UiHelpers::createCard(root, UiHelpers::kAuthCardWidth);
     card->setMaximumWidth(UiHelpers::kAuthCardWidth);
-    card->setMinimumWidth(320);
-    auto *cardLayout = new QVBoxLayout(card);
-    cardLayout->setContentsMargins(40, 36, 40, 36);
-    cardLayout->setSpacing(20);
+    card->setMinimumWidth(760);
+    auto *cardLayout = new QHBoxLayout(card);
+    cardLayout->setContentsMargins(0, 0, 0, 0);
+    cardLayout->setSpacing(0);
 
-    cardLayout->addWidget(UiHelpers::createEmoji(QStringLiteral("🎨"), card));
-    cardLayout->addWidget(UiHelpers::createTitle(QStringLiteral("¡Hola, artista!"), card));
-    cardLayout->addWidget(
-        UiHelpers::createSubtitle(QStringLiteral("Ingresá para contar tu dibujo"), card));
+    QWidget *heroPanel = new QWidget(card);
+    heroPanel->setObjectName(QStringLiteral("heroPanel"));
+    auto *heroLayout = new QVBoxLayout(heroPanel);
+    heroLayout->setContentsMargins(44, 40, 44, 40);
+    heroLayout->setSpacing(20);
+    heroLayout->addWidget(UiHelpers::createEmoji(QStringLiteral("🎨"), heroPanel));
+    heroLayout->addWidget(UiHelpers::createTitle(QStringLiteral("¡Hola, artista!"), heroPanel));
+    heroLayout->addWidget(
+        UiHelpers::createSubtitle(QStringLiteral("Ingresá para contar tu dibujo"), heroPanel));
+    heroLayout->addSpacing(12);
+    heroLayout->addWidget(UiHelpers::createSubtitle(QStringLiteral("Diseño horizontal para escritorio."), heroPanel));
+    heroLayout->addStretch(1);
 
-    m_usernameEdit = new QLineEdit(card);
+    QWidget *formPanel = new QWidget(card);
+    auto *formLayout = new QVBoxLayout(formPanel);
+    formLayout->setContentsMargins(44, 40, 44, 40);
+    formLayout->setSpacing(18);
+
+    auto *sectionLabel = new QLabel(QStringLiteral("Ingreso"), formPanel);
+    sectionLabel->setObjectName(QStringLiteral("sectionLabel"));
+    formLayout->addWidget(sectionLabel);
+
+    auto *sectionSub = new QLabel(QStringLiteral("Iniciá sesión con tu usuario y clave."), formPanel);
+    sectionSub->setWordWrap(true);
+    sectionSub->setStyleSheet("color: #475569; font-size: 13pt;");
+    formLayout->addWidget(sectionSub);
+
+    m_usernameEdit = new QLineEdit(formPanel);
     m_usernameEdit->setPlaceholderText(QStringLiteral("Tu usuario"));
-    cardLayout->addWidget(
-        UiHelpers::createFieldGroup(card, QStringLiteral("👤 Usuario"), m_usernameEdit));
+    formLayout->addWidget(
+        UiHelpers::createFieldGroup(formPanel, QStringLiteral("👤 Usuario"), m_usernameEdit));
 
-    m_passwordEdit = new QLineEdit(card);
+    m_passwordEdit = new QLineEdit(formPanel);
     m_passwordEdit->setPlaceholderText(QStringLiteral("Tu contraseña"));
     m_passwordEdit->setEchoMode(QLineEdit::Password);
-    cardLayout->addWidget(
-        UiHelpers::createFieldGroup(card, QStringLiteral("🔒 Clave"), m_passwordEdit));
+    formLayout->addWidget(
+        UiHelpers::createFieldGroup(formPanel, QStringLiteral("🔒 Clave"), m_passwordEdit));
 
-    cardLayout->addSpacing(8);
+    formLayout->addSpacing(8);
 
-    m_ingresarButton = new QPushButton(QStringLiteral("🚀  ¡Entrar!"), card);
-    m_registrarseButton = new QPushButton(QStringLiteral("✨  Crear cuenta"), card);
+    m_ingresarButton = new QPushButton(QStringLiteral("🚀  ¡Entrar!"), formPanel);
+    m_registrarseButton = new QPushButton(QStringLiteral("✨  Crear cuenta"), formPanel);
     m_registrarseButton->setObjectName(QStringLiteral("secondaryButton"));
 
-    UiHelpers::addFullWidthButton(cardLayout, m_ingresarButton);
-    UiHelpers::addFullWidthButton(cardLayout, m_registrarseButton);
+    UiHelpers::addFullWidthButton(formLayout, m_ingresarButton);
+    UiHelpers::addFullWidthButton(formLayout, m_registrarseButton);
 
-    m_statusLabel = UiHelpers::createStatusLabel(card);
-    cardLayout->addWidget(m_statusLabel);
+    m_statusLabel = UiHelpers::createStatusLabel(formPanel);
+    formLayout->addWidget(m_statusLabel);
+    formLayout->addStretch(1);
+
+    heroPanel->setFixedWidth(360);
+    cardLayout->addWidget(heroPanel);
+    cardLayout->addWidget(formPanel);
 
     centerRow->addWidget(card, 0, Qt::AlignCenter);
     centerRow->addStretch(1);
@@ -96,10 +124,12 @@ void LoginWindow::onIngresarClicked()
 
     if (username.isEmpty() || password.isEmpty()) {
         m_statusLabel->setText(QStringLiteral("Completá usuario y contraseña."));
+        m_statusLabel->setVisible(true);
         return;
     }
 
     m_statusLabel->setText(QStringLiteral("Conectando..."));
+    m_statusLabel->setVisible(true);
     setBusy(true);
     ApiClient::instance().login(username, password);
 }
@@ -113,6 +143,7 @@ void LoginWindow::onLoginSucceeded(const QString & /*accessToken*/)
 {
     setBusy(false);
     m_statusLabel->clear();
+    m_statusLabel->setVisible(false);
     emit loginSuccessful();
 }
 
@@ -120,5 +151,6 @@ void LoginWindow::onLoginFailed(const QString &message)
 {
     setBusy(false);
     m_statusLabel->setText(message);
+    m_statusLabel->setVisible(true);
     QMessageBox::warning(this, QStringLiteral("Ups, no pudimos entrar"), message);
 }

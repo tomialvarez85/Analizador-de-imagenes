@@ -70,8 +70,8 @@ QLabel *createStatusLabel(QWidget *parent)
     label->setObjectName(QStringLiteral("statusLabel"));
     label->setAlignment(Qt::AlignCenter);
     label->setWordWrap(true);
-    label->setMinimumHeight(44);
-    label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    label->setVisible(false);
+    label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
     return label;
 }
 

@@ -11,7 +11,7 @@ class QVBoxLayout;
 
 namespace UiHelpers {
 
-constexpr int kAuthCardWidth = 440;
+constexpr int kAuthCardWidth = 860;
 
 QWidget *createAppRoot(QWidget *parent);
 QVBoxLayout *createOuterLayout(QWidget *appRoot);

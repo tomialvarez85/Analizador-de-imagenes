@@ -1,24 +1,22 @@
-FROM debian:bullseye
+FROM python:3.11-slim
 
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    g++ \
-    make \
-    libmysqlclient-dev \
-    libcurl4-openssl-dev \
-    libssl-dev \
-    libmicrohttpd-dev \
-    nlohmann-json3-dev \
-    pkg-config \
-    ca-certificates \
+    default-libmysqlclient-dev \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
-COPY app /app/app
+COPY app /app
 
-RUN g++ -std=c++17 -O2 -Wall /app/app/main.cpp -o /app/backend_app \
-    -lmicrohttpd -lmysqlclient -lcurl -lssl -lcrypto -pthread
+RUN pip install --no-cache-dir \
+    flask \
+    flask-cors \
+    mysql-connector-python \
+    anthropic \
+    python-dotenv \
+    pyjwt
 
 EXPOSE 8000
 
-CMD ["/app/backend_app"]
+CMD ["python", "main.py"]

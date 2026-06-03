@@ -8,7 +8,7 @@ from jose import JWTError, jwt
 import bcrypt
 import mysql.connector
 
-from app.anthropic_analyzer import AnthropicAnalyzerError, analizar_imagen_con_anthropic
+from anthropic_analyzer import AnthropicAnalyzerError, analizar_imagen_con_anthropic
 
 app = FastAPI(title="VPS-POO API", root_path="/api")
 

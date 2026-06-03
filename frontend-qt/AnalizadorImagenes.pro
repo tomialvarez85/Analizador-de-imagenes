@@ -25,6 +25,11 @@ HEADERS += \
     include/windows/registrowindow.h \
     include/windows/mainwindow.h
 
+FORMS += \
+    forms/loginwindow.ui \
+    forms/registrowindow.ui \
+    forms/mainwindow.ui
+
 win32 {
     RC_ICONS =
 }

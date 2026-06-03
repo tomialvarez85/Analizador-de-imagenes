@@ -1,11 +1,10 @@
-FROM debian:bullseye
+FROM ubuntu:24.04
 
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
-    make \
-    libmysqlclient-dev \
+    libmariadb-dev \
     libcurl4-openssl-dev \
     libssl-dev \
     libmicrohttpd-dev \
@@ -15,10 +14,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY app /app/app
+COPY backend/debug.sh /app/debug.sh
 
-RUN g++ -std=c++17 -O2 -Wall /app/app/main.cpp -o /app/backend_app \
-    -lmicrohttpd -lmysqlclient -lcurl -lssl -lcrypto -pthread
-
-EXPOSE 8000
-
-CMD ["/app/backend_app"]
+RUN chmod +x /app/debug.sh && /app/debug.sh

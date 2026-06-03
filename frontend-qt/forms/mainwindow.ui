@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1200</width>
+    <height>700</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>760</width>
+    <height>560</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Analizador de Imágenes</string>
+  </property>
+  <property name="styleSheet">
+   <string>QMainWindow { background-color: #f8fafc; }</string>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <property name="styleSheet">
+    <string>QWidget#centralWidget { background-color: #f8fafc; }</string>
+   </property>
+   <layout class="QVBoxLayout" name="mainLayout">
+    <property name="leftMargin">
+     <number>32</number>
+    </property>
+    <property name="topMargin">
+     <number>28</number>
+    </property>
+    <property name="rightMargin">
+     <number>32</number>
+    </property>
+    <property name="bottomMargin">
+     <number>32</number>
+    </property>
+    <property name="spacing">
+     <number>18</number>
+    </property>
+    <item alignment="Qt::AlignHCenter">
+     <widget class="QLabel" name="emoji">
+      <property name="text">
+       <string>🖼️</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+      <property name="styleSheet">
+       <string>font-size: 48px;</string>
+      </property>
+     </widget>
+    </item>
+    <item alignment="Qt::AlignHCenter">
+     <widget class="QLabel" name="title">
+      <property name="text">
+       <string>Contame tu dibujo</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+      <property name="styleSheet">
+       <string>color: #1e293b; font-size: 32pt; font-weight: bold;</string>
+      </property>
+     </widget>
+    </item>
+    <item alignment="Qt::AlignHCenter">
+     <widget class="QLabel" name="subtitle">
+      <property name="text">
+       <string>Cargá una imagen, analizala y escuchá tu cuento</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+      <property name="styleSheet">
+       <string>color: #64748b; font-size: 14pt;</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QWidget" name="contentWidget" native="true">
+      <layout class="QHBoxLayout" name="contentLayout">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <property name="spacing">
+        <number>28</number>
+       </property>
+       <item>
+        <widget class="QWidget" name="leftCard" native="true">
+         <property name="minimumWidth">
+          <number>380</number>
+         </property>
+         <property name="minimumHeight">
+          <number>360</number>
+         </property>
+         <property name="styleSheet">
+          <string>QWidget#leftCard { background-color: #ffffff; border-radius: 12px; }</string>
+         </property>
+         <layout class="QVBoxLayout" name="leftCardLayout">
+          <property name="leftMargin">
+           <number>24</number>
+          </property>
+          <property name="topMargin">
+           <number>24</number>
+          </property>
+          <property name="rightMargin">
+           <number>24</number>
+          </property>
+          <property name="bottomMargin">
+           <number>24</number>
+          </property>
+          <property name="spacing">
+           <number>16</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="imageSectionLabel">
+            <property name="text">
+             <string>📷 Tu imagen</string>
+            </property>
+            <property name="styleSheet">
+             <string>color: #1e293b; font-size: 14pt; font-weight: bold;</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="imageFrame">
+            <property name="minimumHeight">
+             <number>240</number>
+            </property>
+            <property name="styleSheet">
+             <string>QFrame#imageFrame { background-color: #f1f5f9; border-radius: 8px; border: 2px dashed #cbd5e1; }</string>
+            </property>
+            <layout class="QVBoxLayout" name="imageFrameLayout">
+             <property name="leftMargin">
+              <number>12</number>
+             </property>
+             <property name="topMargin">
+              <number>12</number>
+             </property>
+             <property name="rightMargin">
+              <number>12</number>
+             </property>
+             <property name="bottomMargin">
+              <number>12</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="imagePreview">
+               <property name="text">
+                <string>Tocá «Cargar imagen»</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="styleSheet">
+                <string>color: #94a3b8; font-size: 12pt;</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" name="buttonContainer" native="true">
+            <layout class="QHBoxLayout" name="buttonLayout">
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <property name="spacing">
+              <number>12</number>
+             </property>
+             <item>
+              <widget class="QPushButton" name="cargarButton">
+               <property name="minimumHeight">
+                <number>40</number>
+               </property>
+               <property name="text">
+                <string>📁 Cargar</string>
+               </property>
+               <property name="styleSheet">
+                <string>QPushButton { background-color: #e0e7ff; color: #667eea; border-radius: 6px; font-size: 11pt; font-weight: bold; }
+QPushButton:hover { background-color: #ddd6fe; }
+QPushButton:pressed { background-color: #c7d2fe; }</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="analizarButton">
+               <property name="minimumHeight">
+                <number>40</number>
+               </property>
+               <property name="text">
+                <string>🔍 Analizar</string>
+               </property>
+               <property name="styleSheet">
+                <string>QPushButton { background-color: #667eea; color: white; border-radius: 6px; font-size: 11pt; font-weight: bold; }
+QPushButton:hover { background-color: #5568d3; }
+QPushButton:pressed { background-color: #4854c2; }</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="rightCard" native="true">
+         <property name="minimumHeight">
+          <number>360</number>
+         </property>
+         <property name="styleSheet">
+          <string>QWidget#rightCard { background-color: #ffffff; border-radius: 12px; }</string>
+         </property>
+         <layout class="QVBoxLayout" name="rightCardLayout">
+          <property name="leftMargin">
+           <number>24</number>
+          </property>
+          <property name="topMargin">
+           <number>24</number>
+          </property>
+          <property name="rightMargin">
+           <number>24</number>
+          </property>
+          <property name="bottomMargin">
+           <number>24</number>
+          </property>
+          <property name="spacing">
+           <number>16</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="resultSectionLabel">
+            <property name="text">
+             <string>✨ Análisis de IA</string>
+            </property>
+            <property name="styleSheet">
+             <string>color: #1e293b; font-size: 14pt; font-weight: bold;</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTextEdit" name="resultEdit">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+            <property name="placeholderText">
+             <string>Aquí aparecerá el análisis de tu imagen: descripción, pregunta e historia.</string>
+            </property>
+            <property name="styleSheet">
+             <string>QTextEdit { background-color: #f1f5f9; border-radius: 8px; border: 1px solid #cbd5e1; color: #1e293b; padding: 12px; }</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="reproducirButton">
+            <property name="minimumHeight">
+             <number>40</number>
+            </property>
+            <property name="text">
+             <string>🔊 Escuchar historia</string>
+            </property>
+            <property name="styleSheet">
+             <string>QPushButton { background-color: #10b981; color: white; border-radius: 6px; font-size: 11pt; font-weight: bold; }
+QPushButton:hover { background-color: #059669; }
+QPushButton:pressed { background-color: #047857; }</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

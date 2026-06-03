@@ -13,6 +13,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <stdexcept>
 #include <filesystem>
 #include <nlohmann/json.hpp>
@@ -28,8 +29,10 @@
 #include <unordered_map>
 #include <vector>
 
+// Alias para facilitar el uso de JSON en todo el archivo.
 using json = nlohmann::json;
 
+// Funciones utilitarias de bajo nivel utilizadas por varios componentes.
 static std::string to_lower(const std::string& s) {
     std::string out = s;
     for (auto& c : out) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
@@ -112,6 +115,7 @@ static std::string hmac_sha256(const std::string& key, const std::string& data) 
     return std::string(reinterpret_cast<char*>(result), SHA256_DIGEST_LENGTH);
 }
 
+// Funciones auxiliares para crear y validar tokens JWT personalizados.
 static json create_jwt_payload(const json& payload, const std::string& secret, int expire_minutes) {
     auto now = std::chrono::system_clock::now();
     auto exp = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count() + expire_minutes * 60;
@@ -151,6 +155,7 @@ static json decode_jwt(const std::string& token, const std::string& secret) {
     return data;
 }
 
+// Normaliza la cadena base64 de imagen eliminando metadatos y espacios.
 static std::string normalize_base64(const std::string& image_base64) {
     std::string data = image_base64;
     auto pos = data.find(',');
@@ -171,8 +176,10 @@ static std::string media_type_from_filename(const std::string& filename) {
     return "image/jpeg";
 }
 
+// Buffer global utilizado por la llamada a cURL para recopilar la respuesta HTTP.
 static std::vector<char> curl_response_buffer;
 
+// Callback que recibe fragmentos de datos devueltos por cURL.
 static size_t curl_write_cb(char* contents, size_t size, size_t nmemb, void* userp) {
     size_t total_size = size * nmemb;
     auto* buffer = static_cast<std::vector<char>*>(userp);
@@ -180,6 +187,7 @@ static size_t curl_write_cb(char* contents, size_t size, size_t nmemb, void* use
     return total_size;
 }
 
+// Configuración de conexión a la base de datos MySQL.
 struct DbConfig {
     std::string host;
     int port;
@@ -188,6 +196,7 @@ struct DbConfig {
     std::string database;
 };
 
+// Clase responsable de abrir conexiones MySQL según una configuración.
 class Database {
 public:
     explicit Database(const DbConfig& config) : config_(config) {}
@@ -209,12 +218,88 @@ private:
     DbConfig config_;
 };
 
-class UserRepository {
+// Clase base que mantiene la dependencia hacia Database para repositorios.
+class BaseRepository {
 public:
-    explicit UserRepository(const Database& database) : db_(database) {}
+    explicit BaseRepository(const Database& database) : db_(&database) {}
+    virtual ~BaseRepository() = default;
+
+protected:
+    const Database* db_;
+};
+
+// Interfaz para analizadores de imagen que devuelven JSON.
+class IAnalyzer {
+public:
+    virtual ~IAnalyzer() = default;
+    virtual json analyze(const std::string& image_base64, const std::string& filename) const = 0;
+};
+
+// Interfaz genérica para servicios de negocio que reciben un JSON y devuelven JSON.
+class BaseService {
+public:
+    virtual ~BaseService() = default;
+    virtual json execute(const json& payload) = 0;
+};
+
+// Clase auxiliar para crear y validar tokens JWT simples.
+class TokenManager {
+public:
+    TokenManager(const std::string& secret, int expire_minutes)
+        : secret_(secret), expire_minutes_(expire_minutes) {}
+
+    std::string create_token(const json& payload) const {
+        json data = payload;
+        data["exp"] = std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count() + expire_minutes_ * 60;
+        json header = {{"alg", "HS256"}, {"typ", "JWT"}};
+        std::string header_encoded = base64url_encode(header.dump());
+        std::string payload_encoded = base64url_encode(data.dump());
+        std::string signature = hmac_sha256(secret_, header_encoded + "." + payload_encoded);
+        return header_encoded + "." + payload_encoded + "." + base64url_encode(signature);
+    }
+
+    json decode_token(const std::string& token) const {
+        if (token.empty()) {
+            throw std::runtime_error("Token faltante");
+        }
+        auto parts = std::vector<std::string>{};
+        std::string part;
+        std::istringstream ss(token);
+        while (std::getline(ss, part, '.')) {
+            parts.push_back(part);
+        }
+        if (parts.size() != 3) {
+            throw std::runtime_error("Token invalido");
+        }
+        std::string payload = base64url_decode(parts[1]);
+        std::string signature = base64url_decode(parts[2]);
+        std::string expected = hmac_sha256(secret_, parts[0] + "." + parts[1]);
+        if (signature != expected) {
+            throw std::runtime_error("Firma de token invalida");
+        }
+        json data = json::parse(payload);
+        long long exp = data.value("exp", 0LL);
+        long long now = std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        if (exp < now) {
+            throw std::runtime_error("Token expirado");
+        }
+        return data;
+    }
+
+private:
+    std::string secret_;
+    int expire_minutes_;
+};
+
+// Repositorio responsable de operaciones de usuarios en MySQL.
+class UserRepository : public BaseRepository {
+public:
+    explicit UserRepository(const Database& database) : BaseRepository(database) {}
 
     json find_by_username(const std::string& username) const {
-        MYSQL* conn = db_.connect();
+        MYSQL* conn = db_->connect();
         std::string query = "SELECT id, username, password, nombre, apellido, email, COALESCE(activo, 1) AS activo FROM usuarios WHERE username = '" + mysql_real_escape_string_quote(conn, username) + "' LIMIT 1";
         if (mysql_query(conn, query.c_str())) {
             std::string error = mysql_error(conn);
@@ -241,7 +326,7 @@ public:
     }
 
     void save_user(const std::string& username, const std::string& hashed_password) const {
-        MYSQL* conn = db_.connect();
+        MYSQL* conn = db_->connect();
         std::string escaped_username = mysql_real_escape_string_quote(conn, username);
         std::string escaped_password = mysql_real_escape_string_quote(conn, hashed_password);
         std::string email = escaped_username + "@sin-email.local";
@@ -261,17 +346,16 @@ private:
         buffer.resize(length);
         return buffer;
     }
-
-    Database db_;
 };
 
-class ImageAnalysisRepository {
+// Repositorio responsable de almacenar y recuperar análisis de imágenes.
+class ImageAnalysisRepository : public BaseRepository {
 public:
-    explicit ImageAnalysisRepository(const Database& database) : db_(database) {}
+    explicit ImageAnalysisRepository(const Database& database) : BaseRepository(database) {}
 
     void save_analysis(int user_id, const std::string& filename, const std::string& descripcion,
                        const std::string& pregunta, const std::string& historia) const {
-        MYSQL* conn = db_.connect();
+        MYSQL* conn = db_->connect();
         std::string qfilename = escape(conn, filename);
         std::string qdescripcion = escape(conn, descripcion);
         std::string qpregunta = escape(conn, pregunta);
@@ -286,7 +370,7 @@ public:
     }
 
     json find_by_user(int user_id) const {
-        MYSQL* conn = db_.connect();
+        MYSQL* conn = db_->connect();
         std::string query = "SELECT id, nombre_archivo, descripcion, pregunta, historia, created_at FROM analisis_imagenes WHERE usuario_id = " + std::to_string(user_id) + " ORDER BY created_at DESC";
         if (mysql_query(conn, query.c_str())) {
             std::string error = mysql_error(conn);
@@ -321,13 +405,49 @@ private:
         return buffer;
     }
 
-    Database db_;
 };
 
-class AuthService {
+// Servicio de negocio que ejecuta el análisis de imagen combinando autenticación y análisis.
+class ImageAnalysisService : public BaseService {
 public:
-    AuthService(const UserRepository& user_repo, const std::string& secret, int expire_minutes)
-        : user_repository_(user_repo), secret_(secret), expire_minutes_(expire_minutes) {}
+    ImageAnalysisService(const ImageAnalysisRepository& analysis_repository,
+                         std::shared_ptr<IAnalyzer> analyzer,
+                         const TokenManager& token_manager)
+        : analysis_repository_(analysis_repository), analyzer_(std::move(analyzer)), token_manager_(token_manager) {}
+
+    json execute(const json& payload) override {
+        std::string token = payload.value("token", "");
+        return analyze_image(payload.value("imagen_base64", ""), payload.value("nombre_archivo", ""), token);
+    }
+
+    json analyze_image(const std::string& imagen_base64, const std::string& nombre_archivo, const std::string& token) const {
+        json user = get_current_user(token);
+        json result = analyzer_->analyze(imagen_base64, nombre_archivo);
+        analysis_repository_.save_analysis(
+            user.value("user_id", 0),
+            nombre_archivo,
+            result["descripcion"].get<std::string>(),
+            result["pregunta"].get<std::string>(),
+            result["historia"].get<std::string>()
+        );
+        return result;
+    }
+
+private:
+    json get_current_user(const std::string& token) const {
+        return token_manager_.decode_token(token);
+    }
+
+    const ImageAnalysisRepository& analysis_repository_;
+    std::shared_ptr<IAnalyzer> analyzer_;
+    const TokenManager& token_manager_;
+};
+
+// Servicio de negocio para registro, login y validación de token.
+class AuthService : public BaseService {
+public:
+    AuthService(const UserRepository& user_repo, const TokenManager& token_manager)
+        : user_repository_(user_repo), token_manager_(token_manager) {}
 
     json register_user(const std::string& username, const std::string& password) const {
         if (!username.size() || !password.size()) {
@@ -353,9 +473,8 @@ public:
             {"apellido", user["apellido"]},
             {"email", user["email"]}
         };
-        json token = create_jwt_payload(payload, secret_, expire_minutes_);
         return {
-            {"access_token", token["token"]},
+            {"access_token", token_manager_.create_token(payload)},
             {"token_type", "bearer"},
             {"user", {
                 {"id", user["id"]},
@@ -368,10 +487,11 @@ public:
     }
 
     json current_user(const std::string& token) const {
-        if (token.empty()) {
-            throw std::runtime_error("Token faltante");
-        }
-        return decode_jwt(token, secret_);
+        return token_manager_.decode_token(token);
+    }
+
+    json execute(const json& payload) override {
+        return authenticate_user(payload.value("username", ""), payload.value("password", ""));
     }
 
 private:
@@ -390,11 +510,11 @@ private:
     }
 
     const UserRepository& user_repository_;
-    std::string secret_;
-    int expire_minutes_;
+    const TokenManager& token_manager_;
 };
 
-class AnthropicAnalyzer {
+// Implementación concreta de IAnalyzer que llama al servicio Anthropic.
+class AnthropicAnalyzer : public IAnalyzer {
 public:
     AnthropicAnalyzer(const std::string& api_key, const std::string& model, int max_tokens)
         : api_key_(api_key), model_(model), max_tokens_(max_tokens) {}
@@ -520,6 +640,7 @@ private:
     int max_tokens_;
 };
 
+// Servicio de salud para exponer métricas básicas del sistema.
 class HealthService {
 public:
     json get_status() const {
@@ -551,6 +672,7 @@ struct ConnectionInfo {
     std::string body;
 };
 
+// Iterador de cabeceras HTTP usado por libmicrohttpd para leer los headers entrantes.
 static int header_iterator(void* cls, enum MHD_ValueKind kind, const char* key, const char* value) {
     if (kind != MHD_HEADER_KIND) return MHD_YES;
     auto headers = static_cast<std::unordered_map<std::string, std::string>*>(cls);
@@ -558,6 +680,7 @@ static int header_iterator(void* cls, enum MHD_ValueKind kind, const char* key, 
     return MHD_YES;
 }
 
+// Añade cabeceras CORS para permitir solicitudes desde el frontend.
 static int add_cors_headers(MHD_Response* response) {
     MHD_add_response_header(response, "Access-Control-Allow-Origin", "*");
     MHD_add_response_header(response, "Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -580,6 +703,7 @@ static int send_error(struct MHD_Connection* connection, const std::string& mess
     return send_json_response(connection, json({{"detail", message}}), status_code);
 }
 
+// Clase principal del servidor API que enruta peticiones HTTP hacia servicios y repositorios.
 class ApiServer {
 public:
     ApiServer(const DbConfig& db_config, const std::string& jwt_secret, int jwt_expire_minutes,
@@ -587,8 +711,9 @@ public:
         : database_(db_config),
           user_repository_(database_),
           analysis_repository_(database_),
-          auth_service_(user_repository_, jwt_secret, jwt_expire_minutes),
-          anthropic_analyzer_(anthropic_api_key, anthropic_model, anthropic_max_tokens) {}
+          token_manager_(jwt_secret, jwt_expire_minutes),
+          auth_service_(user_repository_, token_manager_),
+          image_analysis_service_(analysis_repository_, std::make_shared<AnthropicAnalyzer>(anthropic_api_key, anthropic_model, anthropic_max_tokens), token_manager_) {}
 
     int handle_request(struct MHD_Connection* connection, const char* url, const char* method,
                        const std::string& body, const std::unordered_map<std::string, std::string>& headers, json& output, int& status_code) {
@@ -623,9 +748,8 @@ public:
             if (strcmp(method, "POST") == 0 && std::string(url) == "/api/analizar-imagen") {
                 json payload = json::parse(body);
                 std::string token = extract_token(headers);
-                json user = auth_service_.current_user(token);
-                json result = anthropic_analyzer_.analyze(payload.value("imagen_base64", ""), payload.value("nombre_archivo", ""));
-                analysis_repository_.save_analysis(user.value("user_id", 0), payload.value("nombre_archivo", ""), result["descripcion"].get<std::string>(), result["pregunta"].get<std::string>(), result["historia"].get<std::string>());
+                payload["token"] = token;
+                json result = image_analysis_service_.execute(payload);
                 output = result;
                 status_code = MHD_HTTP_OK;
                 return MHD_YES;
@@ -660,10 +784,12 @@ private:
     Database database_;
     UserRepository user_repository_;
     ImageAnalysisRepository analysis_repository_;
+    TokenManager token_manager_;
     AuthService auth_service_;
-    AnthropicAnalyzer anthropic_analyzer_;
+    ImageAnalysisService image_analysis_service_;
 };
 
+// Callback principal de libmicrohttpd que construye la petición y llama a ApiServer.
 static int answer_to_connection(void* cls, struct MHD_Connection* connection,
                                 const char* url, const char* method, const char* version,
                                 const char* upload_data, size_t* upload_data_size, void** con_cls) {
@@ -690,6 +816,7 @@ static int answer_to_connection(void* cls, struct MHD_Connection* connection,
     return send_error(connection, "Endpoint no encontrado", MHD_HTTP_NOT_FOUND);
 }
 
+// Libera la información asociada a la conexión cuando la petición finaliza.
 static void request_completed(void* cls, struct MHD_Connection* connection, void** con_cls, enum MHD_RequestTerminationCode toe) {
     if (*con_cls) {
         delete static_cast<ConnectionInfo*>(*con_cls);
@@ -697,6 +824,7 @@ static void request_completed(void* cls, struct MHD_Connection* connection, void
     }
 }
 
+// Punto de entrada del servidor. Lee variables de entorno, crea el servidor y arranca el daemon HTTP.
 int main() {
     DbConfig db_config{
         std::getenv("DB_HOST") ? std::getenv("DB_HOST") : "db",

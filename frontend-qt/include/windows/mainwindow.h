@@ -3,15 +3,14 @@
 
 #include <QMainWindow>
 #include <QPixmap>
+#include <QProcess>
 
-class AnalysisService;
-class ImageDocument;
 class QLabel;
+class QTextEdit;
+class QPushButton;
+class QTemporaryFile;
 class QBoxLayout;
 class QFrame;
-class QPushButton;
-class QTextEdit;
-class StoryNarrator;
 
 class MainWindow : public QMainWindow
 {
@@ -32,6 +31,7 @@ private slots:
                              const QString &pregunta,
                              const QString &historia);
     void onAnalisisFailed(const QString &message);
+    void onVozFinished(int exitCode, QProcess::ExitStatus status);
 
 private:
     void buildUi();
@@ -54,10 +54,13 @@ private:
     QFrame *m_leftCard = nullptr;
     QFrame *m_rightCard = nullptr;
 
-    ImageDocument *m_imageDocument = nullptr;
-    AnalysisService *m_analysisService = nullptr;
-    StoryNarrator *m_storyNarrator = nullptr;
+    QString m_imagePath;
+    QByteArray m_imageBytes;
+    QPixmap m_pixmapOriginal;
     QString m_historiaText;
+
+    QProcess *m_vozProcess = nullptr;
+    QTemporaryFile *m_textoVozFile = nullptr;
 };
 
 #endif // MAINWINDOW_H

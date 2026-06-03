@@ -14,19 +14,13 @@ SOURCES += \
     src/api/apiclient.cpp \
     src/windows/loginwindow.cpp \
     src/windows/registrowindow.cpp \
-    src/windows/mainwindow.cpp \
-    src/domain/imagedocument.cpp \
-    src/domain/analysisservice.cpp \
-    src/domain/storynarrator.cpp
+    src/windows/mainwindow.cpp
 
 HEADERS += \
     include/config.h \
     include/styles.h \
     include/uihelpers.h \
     include/api/apiclient.h \
-    include/domain/imagedocument.h \
-    include/domain/analysisservice.h \
-    include/domain/storynarrator.h \
     include/windows/loginwindow.h \
     include/windows/registrowindow.h \
     include/windows/mainwindow.h

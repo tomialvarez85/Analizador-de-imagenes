@@ -1,7 +1,5 @@
 #include "windows/mainwindow.h"
-#include "domain/analysisservice.h"
-#include "domain/imagedocument.h"
-#include "domain/storynarrator.h"
+#include "api/apiclient.h"
 #include "uihelpers.h"
 
 #include <QFile>
@@ -13,41 +11,23 @@
 #include <QLabel>
 #include <QMessageBox>
 #include <QPixmap>
+#include <QProcess>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QSizePolicy>
+#include <QTemporaryFile>
 #include <QTextEdit>
 #include <QVBoxLayout>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    m_imageDocument = new ImageDocument(this);
-    m_analysisService = new AnalysisService(this);
-    m_storyNarrator = new StoryNarrator(this);
-
     buildUi();
 
-    connect(m_analysisService, &AnalysisService::analysisStarted, this, [this]() {
-        setAnalisisBusy(true);
-        m_resultEdit->setPlainText(QStringLiteral("✨ Analizando tu dibujo..."));
-    });
-    connect(m_analysisService, &AnalysisService::analysisSucceeded,
+    connect(&ApiClient::instance(), &ApiClient::analisisSucceeded,
             this, &MainWindow::onAnalisisSucceeded);
-    connect(m_analysisService, &AnalysisService::analysisFailed,
+    connect(&ApiClient::instance(), &ApiClient::analisisFailed,
             this, &MainWindow::onAnalisisFailed);
-
-    connect(m_storyNarrator, &StoryNarrator::narracionStarted, this, [this]() {
-        m_reproducirButton->setText(QStringLiteral("⏹️ Detener"));
-        actualizarBotonReproducir();
-    });
-    connect(m_storyNarrator, &StoryNarrator::narracionStopped, this, [this]() {
-        m_reproducirButton->setText(QStringLiteral("🔊 Reproducir historia"));
-        actualizarBotonReproducir();
-    });
-    connect(m_storyNarrator, &StoryNarrator::narracionError, this, [this](const QString &message) {
-        QMessageBox::warning(this, QStringLiteral("Error"), message);
-    });
 }
 
 MainWindow::~MainWindow()
@@ -186,13 +166,12 @@ void MainWindow::ajustarLayoutResponsivo()
 
 void MainWindow::refrescarVistaImagen()
 {
-    if (!m_imageDocument || !m_imageDocument->isValid() || !m_imageLabel) {
+    if (m_pixmapOriginal.isNull() || !m_imageLabel) {
         return;
     }
-
-    const QPixmap scaled = m_imageDocument->pixmap().scaled(m_imageLabel->size(),
-                                                            Qt::KeepAspectRatio,
-                                                            Qt::SmoothTransformation);
+    const QPixmap scaled = m_pixmapOriginal.scaled(m_imageLabel->size(),
+                                                   Qt::KeepAspectRatio,
+                                                   Qt::SmoothTransformation);
     m_imageLabel->setPixmap(scaled);
 }
 
@@ -208,13 +187,34 @@ void MainWindow::onCargarImagenClicked()
         return;
     }
 
-    if (!m_imageDocument->loadFromFile(path)) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this,
                              QStringLiteral("Error"),
-                             QStringLiteral("No se pudo cargar la imagen. Verificá el archivo y volvé a intentarlo."));
+                             QStringLiteral("No se pudo abrir la imagen."));
         return;
     }
 
+    m_imageBytes = file.readAll();
+    file.close();
+
+    if (m_imageBytes.isEmpty()) {
+        QMessageBox::warning(this,
+                             QStringLiteral("Error"),
+                             QStringLiteral("El archivo está vacío."));
+        return;
+    }
+
+    if (!m_pixmapOriginal.loadFromData(m_imageBytes)) {
+        QMessageBox::warning(this,
+                             QStringLiteral("Error"),
+                             QStringLiteral("Formato de imagen no válido."));
+        m_imageBytes.clear();
+        m_pixmapOriginal = QPixmap();
+        return;
+    }
+
+    m_imagePath = path;
     refrescarVistaImagen();
     m_analizarButton->setEnabled(true);
     m_reproducirButton->setEnabled(false);
@@ -225,14 +225,20 @@ void MainWindow::onCargarImagenClicked()
 
 void MainWindow::onAnalizarClicked()
 {
-    if (!m_imageDocument->isValid()) {
+    if (m_imageBytes.isEmpty()) {
         QMessageBox::information(this,
                                QStringLiteral("Sin imagen"),
                                QStringLiteral("Primero cargá una imagen."));
         return;
     }
 
-    m_analysisService->analyzeImage(*m_imageDocument);
+    const QFileInfo info(m_imagePath);
+    const QString nombreArchivo = info.fileName();
+    const QString imagenBase64 = QString::fromLatin1(m_imageBytes.toBase64());
+
+    setAnalisisBusy(true);
+    m_resultEdit->setPlainText(QStringLiteral("✨ Analizando tu dibujo..."));
+    ApiClient::instance().analizarImagen(imagenBase64, nombreArchivo);
 }
 
 void MainWindow::onReproducirClicked()
@@ -245,7 +251,7 @@ void MainWindow::onReproducirClicked()
         return;
     }
 
-    if (m_storyNarrator->isNarrating()) {
+    if (m_vozProcess && m_vozProcess->state() != QProcess::NotRunning) {
         detenerNarracion();
         return;
     }
@@ -274,12 +280,106 @@ void MainWindow::onAnalisisFailed(const QString &message)
 
 void MainWindow::narrarHistoria(const QString &texto)
 {
-    m_storyNarrator->narrate(texto);
+#ifdef Q_OS_WIN
+    detenerNarracion();
+
+    m_textoVozFile = new QTemporaryFile(this);
+    m_textoVozFile->setAutoRemove(false);
+    if (!m_textoVozFile->open()) {
+        QMessageBox::warning(this,
+                             QStringLiteral("Error"),
+                             QStringLiteral("No se pudo preparar el texto para narrar."));
+        return;
+    }
+    m_textoVozFile->write(texto.toUtf8());
+    m_textoVozFile->flush();
+
+    const QString ruta = m_textoVozFile->fileName();
+    const QString script = QStringLiteral(
+        "Add-Type -AssemblyName System.Speech; "
+        "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+        "$s.Rate = -1; "
+        "foreach ($v in $s.GetInstalledVoices()) { "
+        "  if ($v.VoiceInfo.Culture.Name -like 'es*') { "
+        "    $s.SelectVoice($v.VoiceInfo.Name); break "
+        "  } "
+        "} "
+        "$t = Get-Content -LiteralPath '%1' -Encoding UTF8 -Raw; "
+        "$s.Speak($t)")
+                               .arg(QString(ruta).replace(QLatin1Char('\''), QStringLiteral("''")));
+
+    m_vozProcess = new QProcess(this);
+    connect(m_vozProcess,
+            QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this,
+            &MainWindow::onVozFinished);
+
+    m_vozProcess->start(QStringLiteral("powershell"),
+                        {QStringLiteral("-NoProfile"),
+                         QStringLiteral("-ExecutionPolicy"),
+                         QStringLiteral("Bypass"),
+                         QStringLiteral("-Command"),
+                         script});
+
+    if (!m_vozProcess->waitForStarted(5000)) {
+        QMessageBox::warning(
+            this,
+            QStringLiteral("Error"),
+            QStringLiteral("No se pudo iniciar la narración de voz en este equipo."));
+        detenerNarracion();
+        return;
+    }
+
+    m_reproducirButton->setText(QStringLiteral("⏹️ Detener"));
+    m_reproducirButton->setEnabled(true);
+#else
+    Q_UNUSED(texto);
+    QMessageBox::information(
+        this,
+        QStringLiteral("No disponible"),
+        QStringLiteral("La narración por voz está disponible en Windows."));
+#endif
 }
 
 void MainWindow::detenerNarracion()
 {
-    m_storyNarrator->stop();
+    if (m_vozProcess) {
+        if (m_vozProcess->state() != QProcess::NotRunning) {
+            m_vozProcess->kill();
+            m_vozProcess->waitForFinished(2000);
+        }
+        m_vozProcess->deleteLater();
+        m_vozProcess = nullptr;
+    }
+    if (m_textoVozFile) {
+        const QString path = m_textoVozFile->fileName();
+        m_textoVozFile->close();
+        m_textoVozFile->deleteLater();
+        m_textoVozFile = nullptr;
+        QFile::remove(path);
+    }
+    m_reproducirButton->setText(QStringLiteral("🔊 Reproducir historia"));
+    actualizarBotonReproducir();
+}
+
+void MainWindow::onVozFinished(int exitCode, QProcess::ExitStatus status)
+{
+    Q_UNUSED(exitCode);
+    Q_UNUSED(status);
+
+    if (m_vozProcess) {
+        m_vozProcess->deleteLater();
+        m_vozProcess = nullptr;
+    }
+    if (m_textoVozFile) {
+        const QString path = m_textoVozFile->fileName();
+        m_textoVozFile->close();
+        m_textoVozFile->deleteLater();
+        m_textoVozFile = nullptr;
+        QFile::remove(path);
+    }
+
+    m_reproducirButton->setText(QStringLiteral("🔊 Reproducir historia"));
     actualizarBotonReproducir();
 }
 
@@ -296,7 +396,7 @@ void MainWindow::setAnalisisBusy(bool busy)
 
 void MainWindow::actualizarBotonReproducir()
 {
-    const bool narrando = m_storyNarrator && m_storyNarrator->isNarrating();
+    const bool narrando = m_vozProcess && m_vozProcess->state() != QProcess::NotRunning;
     m_reproducirButton->setEnabled(!m_historiaText.isEmpty() || narrando);
 }
 
